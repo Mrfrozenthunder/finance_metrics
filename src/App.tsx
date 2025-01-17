@@ -96,6 +96,7 @@ const metrics = [
   { label: 'Target Sales', key: 'targetSales' },
   { label: 'New Members', key: 'newMembers' },
   { label: 'Repeat Members', key: 'repeatMembers' },
+  { label: 'Expired Members', key: 'expiredMembers' },
   { label: 'Total Members', key: 'totalMembers' },
   { label: 'Subscription Revenue', key: 'subscriptionRevenue', format: true },
   { label: 'PT Revenue', key: 'ptRevenue', format: true },
@@ -104,9 +105,10 @@ const metrics = [
   { label: 'Gross Margin', key: 'grossMargin', format: true },
   { label: 'Gross Margin %', key: 'grossMarginPercentage', percentage: true },
   { label: 'PT Sales %', key: 'ptSalesPercentage', percentage: true },
+  { label: 'Depreciation', key: 'depreciation', format: true },
+  { label: 'Interest', key: 'interest', format: true },
   { label: 'EBITDA', key: 'ebitda', format: true },
   { label: 'EBITDA %', key: 'ebitdaPercentage', percentage: true },
-  { label: 'Depreciation', key: 'depreciation', format: true },
   { label: 'PBT', key: 'pbt', format: true },
   { label: 'Tax', key: 'tax', format: true },
   { label: 'PAT', key: 'pat', format: true },
@@ -242,7 +244,7 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
     cumulativeDcf += dcf;
 
     data.push({
-      month: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+      month: `${date.getFullYear().toString().slice(-2)}-${String(date.getMonth() + 1).padStart(2, '0')}`,
       year,
       targetSales,
       newMembers,
@@ -324,7 +326,7 @@ function App() {
   };
 
   const handleInputChange = (field: keyof Assumptions) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value === '' ? 0 : Number(event.target.value);
+    const value = event.target.value === '' ? '' : Number(event.target.value);
     setAssumptions(prev => ({
       ...prev,
       [field]: value
@@ -476,7 +478,7 @@ function App() {
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>NPV</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      {formatCurrency(valuationMetrics?.npv || 0)}
+                      {valuationMetrics?.npv ? formatCurrency(valuationMetrics.npv) : '₹0'}
                     </Typography>
                   </Paper>
                 </Grid>
@@ -484,7 +486,7 @@ function App() {
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>IRR</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      {Math.round(valuationMetrics?.irr || 0)}%
+                      {valuationMetrics?.irr ? valuationMetrics.irr.toFixed(2) + '%' : '0%'}
                     </Typography>
                   </Paper>
                 </Grid>
@@ -492,7 +494,7 @@ function App() {
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>MIRR</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      {Math.round(valuationMetrics?.mirr || 0)}%
+                      {valuationMetrics?.mirr ? valuationMetrics.mirr.toFixed(2) + '%' : '0%'}
                     </Typography>
                   </Paper>
                 </Grid>
@@ -500,7 +502,7 @@ function App() {
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>Payback Period</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      {Math.round((valuationMetrics?.paybackPeriod || 0))} years
+                      {valuationMetrics?.paybackPeriod ? valuationMetrics.paybackPeriod.toFixed(2) + ' years' : '0 years'}
                     </Typography>
                   </Paper>
                 </Grid>
@@ -539,9 +541,9 @@ function App() {
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Metric</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>Metric</TableCell>
                         {monthlyData.map(data => (
-                          <TableCell key={data.month} align="right" sx={{ fontWeight: 'bold' }}>
+                          <TableCell key={data.month} align="right" sx={{ fontWeight: 'bold', minWidth: 100 }}>
                             {data.month}
                           </TableCell>
                         ))}
@@ -550,9 +552,9 @@ function App() {
                     <TableBody>
                       {metrics.map(({ label, key, format, percentage }) => (
                         <TableRow key={key} hover>
-                          <TableCell sx={{ fontWeight: 'bold' }}>{label}</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>{label}</TableCell>
                           {monthlyData.map(data => (
-                            <TableCell key={`${data.month}-${key}`} align="right">
+                            <TableCell key={`${data.month}-${key}`} align="right" sx={{ minWidth: 100 }}>
                               {percentage 
                                 ? `${Math.round(data[key as keyof MonthlyData])}%`
                                 : format 
