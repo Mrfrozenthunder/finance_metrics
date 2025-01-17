@@ -1,0 +1,92 @@
+{
+  "sheets": [
+    {
+      "name": "Assumptions",
+      "data": [
+        ["Key Assumptions"],
+        ["Monthly New Members Target", 80],
+        ["Subscription Price (INR)", 30000],
+        ["Annual Price Increase", "10%"],
+        ["PT Revenue % of Members", "7%"],
+        ["PT Price per Month (INR)", 25000],
+        ["PT Revenue Share to Gym", "60%"],
+        ["Annual Expense Increase", "10%"],
+        ["Tax Rate", "30%"],
+        ["Project Life (Years)", 7],
+        ["Discount Rate", "12%"],
+        ["Maximum Capacity", 1000],
+        ["12-Month Retention Rate", "40%"],
+        ["Salvage Value % of Initial Cost", "10%"]
+      ]
+    },
+    {
+      "name": "Membership Calculations",
+      "data": [
+        ["Month", "New Members", "Retained Members", "Total Members", "Expired Members"],
+        ["=CONCATENATE(YEAR(DATE(2025,4,1)+ROW()-2,\",\",MONTH(DATE(2025,4,1)+ROW()-2))", 
+         "=MIN(80-B2*0.4,1000-C2)", 
+         "=IF(ROW()<=12,0,B2*0.4)",
+         "=B2+C2",
+         "=IF(ROW()<=12,0,B2*(1-0.4))"]
+      ]
+    },
+    {
+      "name": "Revenue Projections",
+      "data": [
+        ["Month", "Subscription Revenue", "PT Revenue", "Total Revenue"],
+        ["=Membership!A2",
+         "=Membership!D2*30000*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=Membership!D2*0.07*25000*0.6*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=SUM(B2:C2)"]
+      ]
+    },
+    {
+      "name": "Depreciation Schedule",
+      "data": [
+        ["Asset", "Initial Cost", "Rate", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6", "Year 7"],
+        ["Building (Interiors)", 10000000, "5%"],
+        ["Machinery/Equipment", 20000000, "15%"],
+        ["Franchise", 3000000, "25%"],
+        ["Furniture & fixtures", 5000000, "10%"],
+        ["Computers/Electronics", 1500000, "15%"],
+        ["Software", 500000, "25%"]
+      ]
+    },
+    {
+      "name": "Operating Expenses",
+      "data": [
+        ["Month", "Rent", "Salary", "Utilities", "Franchise Fee", "Marketing", "Total Expenses"],
+        ["=Revenue!A2",
+         "=720000*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=324000*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=351600*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=177600*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=71996.4*(1+10%)^ROUNDDOWN((ROW()-2)/12,0)",
+         "=SUM(B2:F2)"]
+      ]
+    },
+    {
+      "name": "Cash Flow Statement",
+      "data": [
+        ["Year", "Revenue", "Operating Expenses", "Depreciation", "EBIT", "Tax", "Net Income", "Add: Depreciation", "Less: CapEx", "FCF"],
+        ["2025"],
+        ["2026"],
+        ["2027"],
+        ["2028"],
+        ["2029"],
+        ["2030"],
+        ["2031"]
+      ]
+    },
+    {
+      "name": "Valuation Metrics",
+      "data": [
+        ["Metric", "Value"],
+        ["NPV"],
+        ["IRR"],
+        ["Payback Period"],
+        ["ROI"]
+      ]
+    }
+  ]
+}
