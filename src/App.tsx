@@ -113,8 +113,8 @@ const metrics = [
   { label: 'Tax', key: 'tax', format: true },
   { label: 'PAT', key: 'pat', format: true },
   { label: 'FCF', key: 'fcf', format: true },
-  { label: 'DCF', key: 'dcf', format: true },
   { label: 'Cumulative FCF', key: 'cumulativeFcf', format: true },
+  { label: 'DCF', key: 'dcf', format: true },
   { label: 'Cumulative DCF', key: 'cumulativeDcf', format: true }
 ];
 
@@ -171,11 +171,11 @@ function TabPanel(props: TabPanelProps) {
 const formatCurrency = (value: number): string => {
   const absValue = Math.abs(value);
   if (absValue >= 10000000) {
-    return `₹${(value / 10000000).toFixed(0)} Cr`;
+    return `₹${(value / 10000000).toFixed(2)} Cr`;  // Show 2 decimal places for Crores
   } else if (absValue >= 100000) {
-    return `₹${(value / 100000).toFixed(0)} L`;
+    return `₹${(value / 100000).toFixed(2)} L`;     // Show 2 decimal places for Lakhs
   } else {
-    return `₹${Math.round(value)}`;
+    return `₹${value.toFixed(2)}`;                  // Show 2 decimal places for other values
   }
 };
 
@@ -478,7 +478,7 @@ function App() {
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>NPV</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      {valuationMetrics?.npv ? formatCurrency(valuationMetrics.npv) : '₹0'}
+                      {valuationMetrics?.npv ? formatCurrency(valuationMetrics.npv) : '₹0.00'}
                     </Typography>
                   </Paper>
                 </Grid>
