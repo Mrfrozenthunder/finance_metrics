@@ -329,39 +329,71 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
   return data;
 };
 
-const calculateIRR = (cashFlows: number[]): number => {
+const calculateIRR = (monthlyFlows: number[]): number => {
+  if (!monthlyFlows.length || !monthlyFlows.some(cf => cf > 0) || !monthlyFlows.some(cf => cf < 0)) {
+    return 0;
+  }
+
   const maxIterations = 1000;
   const tolerance = 0.000001;
   
+  const npv = (monthlyRate: number): number => {
+    return monthlyFlows.reduce((sum, cf, i) => sum + cf / Math.pow(1 + monthlyRate, i), 0);
+  };
+
+  let low = -0.99;
+  let high = 0.99;
   let guess = 0.1;
-  
-  const f = (rate: number) => {
-    return cashFlows.reduce((sum, cf, i) => sum + cf / Math.pow(1 + rate, i), 0);
-  };
-  
-  const df = (rate: number) => {
-    return cashFlows.reduce((sum, cf, i) => sum - i * cf / Math.pow(1 + rate, i + 1), 0);
-  };
-  
+
   for (let i = 0; i < maxIterations; i++) {
-    const fx = f(guess);
-    if (Math.abs(fx) < tolerance) {
-      return guess * 100;
+    const npvAtGuess = npv(guess);
+    
+    if (Math.abs(npvAtGuess) < tolerance) {
+      // Convert monthly rate to annual rate
+      const annualRate = (Math.pow(1 + guess, 12) - 1) * 100;
+      return annualRate;
     }
-    guess = guess - fx / df(guess);
+
+    if (npvAtGuess > 0) {
+      low = guess;
+    } else {
+      high = guess;
+    }
+    
+    guess = (low + high) / 2;
   }
   
   return 0;
 };
 
-const calculateMIRR = (cashFlows: number[], reinvestmentRate: number, financingRate: number): number => {
-  const positiveCFs = cashFlows.map((cf, i) => cf > 0 ? cf * Math.pow(1 + reinvestmentRate / 100, cashFlows.length - 1 - i) : 0);
-  const negativeCFs = cashFlows.map((cf, i) => cf < 0 ? cf * Math.pow(1 + financingRate / 100, -i) : 0);
+const calculateMIRR = (monthlyFlows: number[], reinvestmentRate: number, financingRate: number): number => {
+  if (monthlyFlows.length < 2) return 0;
+
+  // Convert annual rates to monthly
+  const monthlyReinvestRate = (1 + reinvestmentRate / 100) ** (1/12) - 1;
+  const monthlyFinancingRate = (1 + financingRate / 100) ** (1/12) - 1;
   
-  const terminalValue = positiveCFs.reduce((sum, cf) => sum + cf, 0);
-  const presentValue = Math.abs(negativeCFs.reduce((sum, cf) => sum + cf, 0));
-  
-  return (Math.pow(terminalValue / presentValue, 1 / (cashFlows.length - 1)) - 1) * 100;
+  const n = monthlyFlows.length - 1; // Total months
+
+  // Calculate present value of negative flows using monthly financing rate
+  const presentValue = Math.abs(
+    monthlyFlows.reduce((sum, cf, i) => {
+      if (cf >= 0) return sum;
+      return sum + cf / Math.pow(1 + monthlyFinancingRate, i);
+    }, 0)
+  );
+
+  // Calculate future value of positive flows using monthly reinvestment rate
+  const futureValue = monthlyFlows.reduce((sum, cf, i) => {
+    if (cf <= 0) return sum;
+    return sum + cf * Math.pow(1 + monthlyReinvestRate, n - i);
+  }, 0);
+
+  if (presentValue === 0 || futureValue === 0) return 0;
+
+  // Calculate monthly MIRR and convert to annual rate
+  const monthlyMirr = Math.pow(futureValue / presentValue, 1/n) - 1;
+  return ((1 + monthlyMirr) ** 12 - 1) * 100;
 };
 
 type NumericInputs = Exclude<keyof Assumptions, 'useLoan'>;
@@ -370,6 +402,7 @@ function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(initialAssumptions);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [tabValue, setTabValue] = useState(0);
+  const [valuationMetrics, setValuationMetrics] = useState<{ npv: number; irr: number; mirr: number; paybackPeriod: number } | null>(null);
 
   const handleTabChange = (_event: TabChangeEvent, newValue: number) => {
     setTabValue(newValue);
@@ -378,6 +411,10 @@ function App() {
   const handleCalculate = () => {
     const data = calculateMonthlyData(assumptions);
     setMonthlyData(data);
+    
+    // Calculate metrics immediately after setting monthly data
+    const metrics = calculateValuationMetrics(data);
+    setValuationMetrics(metrics);
   };
 
   // Update the handleInputChange function to handle boolean values
@@ -400,26 +437,28 @@ function App() {
     }));
   };
 
-  const calculateValuationMetrics = () => {
-    if (!monthlyData.length) return null;
+  const calculateValuationMetrics = (data: MonthlyData[]) => {
+    if (!data.length) return null;
 
-    const yearlyFCF = monthlyData.reduce((acc, curr) => {
-      const year = curr.year;
-      if (!acc[year]) acc[year] = 0;
-      acc[year] += curr.fcf;
-      return acc;
-    }, {} as Record<number, number>);
-
-    const fcfArray = Object.values(yearlyFCF);
-    const npv = monthlyData[monthlyData.length - 1].cumulativeNpv;
-    const irr = calculateIRR(fcfArray);
-    const mirr = calculateMIRR(fcfArray, assumptions.reinvestmentRate, assumptions.financingRate);
-    const paybackPeriod = monthlyData.findIndex(d => d.cumulativeFcf > 0) / 12;
+    // Use monthly FCF directly instead of yearly aggregation
+    const monthlyFCF = data.map(d => d.fcf);
+    
+    // Log monthly cash flows
+    console.log('=== Monthly Cash Flow Analysis ===');
+    console.log('Month | Cash Flow (₹)');
+    console.log('------------------');
+    monthlyFCF.forEach((cf, i) => {
+      console.log(`${i + 1} | ${formatCurrency(cf)}`);
+    });
+    console.log('------------------');
+    
+    const npv = data[data.length - 1].cumulativeNpv;
+    const irr = calculateIRR(monthlyFCF);
+    const mirr = calculateMIRR(monthlyFCF, assumptions.reinvestmentRate, assumptions.financingRate);
+    const paybackPeriod = data.findIndex(d => d.cumulativeFcf > 0) / 12;
 
     return { npv, irr, mirr, paybackPeriod };
   };
-
-  const valuationMetrics = monthlyData.length ? calculateValuationMetrics() : null;
 
   return (
     <ThemeProvider theme={theme}>
