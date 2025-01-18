@@ -785,25 +785,33 @@ function App() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Expense Name</TableCell>
-                    <TableCell align="right">Monthly Amount (₹)</TableCell>
+                    <TableCell sx={{ width: '60%', fontWeight: 'bold', textAlign: 'center' }}>
+                      Expense Name
+                    </TableCell>
+                    <TableCell sx={{ width: '40%', fontWeight: 'bold', textAlign: 'center' }}>
+                      Monthly Amount (₹)
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {expenses.map((expense) => (
                     <TableRow key={expense.id}>
-                      <TableCell>
+                      <TableCell sx={{ width: '60%' }}>
                         <TextField
                           fullWidth
                           value={expense.name}
                           onChange={(e) => handleExpenseChange(expense.id, 'name', e.target.value)}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ width: '40%' }}>
                         <TextField
+                          fullWidth
                           type="number"
                           value={expense.amount}
                           onChange={(e) => handleExpenseChange(expense.id, 'amount', parseFloat(e.target.value))}
+                          InputProps={{
+                            sx: { textAlign: 'right' }
+                          }}
                         />
                       </TableCell>
                     </TableRow>
@@ -826,33 +834,47 @@ function App() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Investment Name</TableCell>
-                    <TableCell align="right">Cost (₹)</TableCell>
-                    <TableCell align="right">Depreciation Rate (%)</TableCell>
+                    <TableCell sx={{ width: '40%', fontWeight: 'bold', textAlign: 'center' }}>
+                      Investment Name
+                    </TableCell>
+                    <TableCell sx={{ width: '30%', fontWeight: 'bold', textAlign: 'center' }}>
+                      Cost (₹)
+                    </TableCell>
+                    <TableCell sx={{ width: '30%', fontWeight: 'bold', textAlign: 'center' }}>
+                      Depreciation Rate (%)
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {investments.map((investment) => (
                     <TableRow key={investment.id}>
-                      <TableCell>
+                      <TableCell sx={{ width: '40%' }}>
                         <TextField
                           fullWidth
                           value={investment.name}
                           onChange={(e) => handleInvestmentChange(investment.id, 'name', e.target.value)}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="right" sx={{ width: '30%' }}>
                         <TextField
+                          fullWidth
                           type="number"
                           value={investment.cost}
                           onChange={(e) => handleInvestmentChange(investment.id, 'cost', parseFloat(e.target.value))}
+                          InputProps={{
+                            sx: { textAlign: 'right' }
+                          }}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="right" sx={{ width: '30%' }}>
                         <TextField
+                          fullWidth
                           type="number"
                           value={investment.rate}
                           onChange={(e) => handleInvestmentChange(investment.id, 'rate', parseFloat(e.target.value))}
+                          InputProps={{
+                            sx: { textAlign: 'right' }
+                          }}
                         />
                       </TableCell>
                     </TableRow>
