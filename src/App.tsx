@@ -740,6 +740,19 @@ function App() {
               <Grid item xs={12}>
                 <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
               </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Use Loan"
+                  select
+                  value={assumptions.useLoan.toString()}
+                  onChange={handleInputChange('useLoan')}
+                  variant="outlined"
+                >
+                  <MenuItem value="true">Yes</MenuItem>
+                  <MenuItem value="false">No</MenuItem>
+                </TextField>
+              </Grid>
               {assumptions.useLoan && (
                 <>
                   <Grid item xs={12} sm={6} md={4}>
