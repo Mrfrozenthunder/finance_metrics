@@ -37,6 +37,8 @@ interface Assumptions {
   loanTenure: number;  // in years
   loanInterest: number;  // annual rate
   ptPenetration: number; // percentage of members taking PT
+  ptSubscriptionPrice: number;  // Monthly PT subscription price
+  ptShareWithGym: number;      // Percentage share with gym
 }
 
 interface MonthlyData {
@@ -109,6 +111,8 @@ const initialAssumptions: Assumptions = {
   loanTenure: 5,
   loanInterest: 12,
   ptPenetration: 7, // 7% of members take PT
+  ptSubscriptionPrice: 25000,  // ₹25,000 per month
+  ptShareWithGym: 60,         // 60% share with gym
 };
 
 const metrics = [
@@ -289,7 +293,7 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
     const priceIncreaseFactor = Math.pow(1 + assumptions.annualPriceIncrease / 100, year);
     const subscriptionRevenue = startMembers * assumptions.subscriptionPrice * priceIncreaseFactor;
     const ptRevenue = totalMembers * (assumptions.ptPenetration / 100) * 
-                     assumptions.ptPrice * (assumptions.ptRevenueShare / 100) * priceIncreaseFactor;
+                     assumptions.ptSubscriptionPrice * (assumptions.ptShareWithGym / 100) * priceIncreaseFactor;
     const totalRevenue = subscriptionRevenue + ptRevenue;
     
     const expenseIncreaseFactor = Math.pow(1 + assumptions.annualExpenseIncrease / 100, year);
@@ -568,6 +572,26 @@ function App() {
                 type="number"
                 value={assumptions.ptPenetration}
                 onChange={handleInputChange('ptPenetration')}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="PT Subscription Price (INR)"
+                type="number"
+                value={assumptions.ptSubscriptionPrice}
+                onChange={handleInputChange('ptSubscriptionPrice')}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="PT Share with Gym (%)"
+                type="number"
+                value={assumptions.ptShareWithGym}
+                onChange={handleInputChange('ptShareWithGym')}
                 variant="outlined"
               />
             </Grid>
