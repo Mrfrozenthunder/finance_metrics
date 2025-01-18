@@ -36,6 +36,7 @@ interface Assumptions {
   loanAmount: number;
   loanTenure: number;  // in years
   loanInterest: number;  // annual rate
+  ptPenetration: number; // percentage of members taking PT
 }
 
 interface MonthlyData {
@@ -106,7 +107,8 @@ const initialAssumptions: Assumptions = {
   useLoan: false,
   loanAmount: 20000000,
   loanTenure: 5,
-  loanInterest: 12
+  loanInterest: 12,
+  ptPenetration: 7, // 7% of members take PT
 };
 
 const metrics = [
@@ -286,7 +288,7 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
 
     const priceIncreaseFactor = Math.pow(1 + assumptions.annualPriceIncrease / 100, year);
     const subscriptionRevenue = startMembers * assumptions.subscriptionPrice * priceIncreaseFactor;
-    const ptRevenue = totalMembers * (assumptions.ptRevenuePercentage / 100) * 
+    const ptRevenue = totalMembers * (assumptions.ptPenetration / 100) * 
                      assumptions.ptPrice * (assumptions.ptRevenueShare / 100) * priceIncreaseFactor;
     const totalRevenue = subscriptionRevenue + ptRevenue;
     
@@ -556,6 +558,16 @@ function App() {
                 type="number"
                 value={assumptions.monthlyNewMembers === 0 ? '' : assumptions.monthlyNewMembers}  // Handle zero values
                 onChange={handleInputChange('monthlyNewMembers')}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="PT Penetration (%)"
+                type="number"
+                value={assumptions.ptPenetration}
+                onChange={handleInputChange('ptPenetration')}
                 variant="outlined"
               />
             </Grid>
