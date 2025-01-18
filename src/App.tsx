@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Container, Paper, TextField, Grid, Typography, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Tabs, Tab, Box, ThemeProvider, createTheme
+  Tabs, Tab, Box, ThemeProvider, createTheme, MenuItem
 } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -28,6 +28,10 @@ interface Assumptions {
   maxCapacity: number;
   retentionRate: number;
   salvageValue: number;
+  useLoan: boolean;
+  loanAmount: number;
+  loanTenure: number;  // in years
+  loanInterest: number;  // annual rate
 }
 
 interface MonthlyData {
@@ -58,6 +62,10 @@ interface MonthlyData {
   cumulativeFcf: number;
   cumulativeDcf: number;
   cumulativeNpv: number;  // Add this new property
+  emi: number;
+  loanInterest: number;
+  loanPrincipal: number;
+  loanBalance: number;
 }
 
 interface Asset {
@@ -90,7 +98,11 @@ const initialAssumptions: Assumptions = {
   financingRate: 12,
   maxCapacity: 1000,
   retentionRate: 40,
-  salvageValue: 10
+  salvageValue: 10,
+  useLoan: false,
+  loanAmount: 20000000,
+  loanTenure: 5,
+  loanInterest: 12
 };
 
 const metrics = [
@@ -113,6 +125,10 @@ const metrics = [
   { label: 'PBT', key: 'pbt', format: true },
   { label: 'Tax', key: 'tax', format: true },
   { label: 'PAT', key: 'pat', format: true },
+  { label: 'EMI', key: 'emi', format: true },
+  { label: 'Loan Interest', key: 'loanInterest', format: true },
+  { label: 'Loan Principal', key: 'loanPrincipal', format: true },
+  { label: 'Loan Balance', key: 'loanBalance', format: true },
   { label: 'FCF', key: 'fcf', format: true },
   { label: 'Cumulative FCF', key: 'cumulativeFcf', format: true },
   { label: 'DCF', key: 'dcf', format: true },
@@ -201,6 +217,15 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
   let cumulativeFcf = 0;
   let cumulativeDcf = 0;
   let cumulativeNpv = 0;
+  
+  // Calculate EMI if loan is used
+  const monthlyRate = assumptions.useLoan ? (assumptions.loanInterest / 12 / 100) : 0;
+  const loanTenureMonths = assumptions.loanTenure * 12;
+  const emi = assumptions.useLoan ? 
+    (assumptions.loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanTenureMonths)) / 
+    (Math.pow(1 + monthlyRate, loanTenureMonths) - 1) : 0;
+  
+  let loanBalance = assumptions.useLoan ? assumptions.loanAmount : 0;
 
   for (let t = 0; t < months; t++) {
     const year = Math.floor(t / 12);
@@ -231,22 +256,34 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
     const ptSalesPercentage = (ptRevenue / totalRevenue) * 100;
     
     const monthlyDepreciation = calculateDepreciation(year) / 12;
-    const interest = 0;
     
+    // Calculate loan components first
+    const loanInterest = loanBalance * monthlyRate;
+    const loanPrincipal = t < loanTenureMonths ? (emi - loanInterest) : 0;
+    loanBalance = Math.max(0, loanBalance - loanPrincipal);
+    
+    // Update EBITDA calculation
     const ebitda = grossMargin;
     const ebitdaPercentage = (ebitda / totalRevenue) * 100;
     
-    const pbt = ebitda - monthlyDepreciation - interest;
+    // Include loan interest in PBT calculation
+    const pbt = ebitda - monthlyDepreciation - loanInterest;
     const tax = pbt * (assumptions.taxRate / 100);
     const pat = pbt - tax;
     
-    const fcf = pat + monthlyDepreciation - (t === 0 ? assets.reduce((sum, a) => sum + a.cost, 0) : 0);
+    // Calculate FCF:
+    // 1. Start with PAT
+    // 2. Add back depreciation (non-cash expense)
+    // 3. Include full initial investment (not reduced by loan)
+    const fcf = pat + monthlyDepreciation - 
+                (t === 0 ? assets.reduce((sum, a) => sum + a.cost, 0) : 0);
+    
     cumulativeFcf += fcf;
     
     const dcf = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
     cumulativeDcf += dcf;
     
-    // Calculate NPV properly for each period
+    // Calculate NPV
     const npv = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
     cumulativeNpv += npv;
 
@@ -267,12 +304,16 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
       grossMarginPercentage,
       ptSalesPercentage,
       depreciation: monthlyDepreciation,
-      interest,
+      interest: loanInterest, // Update interest to use loan interest
       ebitda,
       ebitdaPercentage,
       pbt,
       tax,
       pat,
+      emi,
+      loanInterest,
+      loanPrincipal,
+      loanBalance,
       fcf,
       dcf,
       cumulativeFcf,
@@ -333,8 +374,14 @@ function App() {
     setMonthlyData(data);
   };
 
-  const handleInputChange = (field: keyof Assumptions) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value === '' ? '' : Number(event.target.value);
+  // Update the handleInputChange function to handle boolean values
+  const handleInputChange = (field: keyof Assumptions) => (
+    event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
+  ) => {
+    const value = field === 'useLoan' 
+      ? event.target.value === 'true'
+      : event.target.value === '' ? '' : Number(event.target.value);
+    
     setAssumptions(prev => ({
       ...prev,
       [field]: value
@@ -454,6 +501,56 @@ function App() {
                 variant="outlined"
               />
             </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="Use Loan"
+                select
+                value={assumptions.useLoan.toString()}
+                onChange={handleInputChange('useLoan')}
+                variant="outlined"
+              >
+                <MenuItem value="true">Yes</MenuItem>
+                <MenuItem value="false">No</MenuItem>
+              </TextField>
+            </Grid>
+            {assumptions.useLoan && (
+              <>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Loan Amount (INR)"
+                    type="number"
+                    value={assumptions.loanAmount}
+                    onChange={handleInputChange('loanAmount')}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Loan Tenure (Years)"
+                    type="number"
+                    value={assumptions.loanTenure}
+                    onChange={handleInputChange('loanTenure')}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Loan Interest Rate (%)"
+                    type="number"
+                    value={assumptions.loanInterest}
+                    onChange={handleInputChange('loanInterest')}
+                    variant="outlined"
+                  />
+                </Grid>
+              </>
+            )}
             <Grid item xs={12}>
               <Button 
                 variant="contained" 
