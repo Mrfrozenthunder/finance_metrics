@@ -81,13 +81,34 @@ interface Asset {
   rate: number;
 }
 
-const assets: Asset[] = [
-  { name: "Building (Interiors)", cost: 10000000, rate: 5 },
-  { name: "Machinery/Equipment", cost: 20000000, rate: 15 },
-  { name: "Franchise", cost: 3000000, rate: 25 },
-  { name: "Furniture & fixtures", cost: 5000000, rate: 10 },
-  { name: "Computers/Electronics", cost: 1500000, rate: 15 },
-  { name: "Software", cost: 500000, rate: 25 }
+interface ExpenseItem {
+  id: string;
+  name: string;
+  amount: number;
+}
+
+interface InvestmentItem {
+  id: string;
+  name: string;
+  cost: number;
+  rate: number;
+}
+
+const initialExpenses: ExpenseItem[] = [
+  { id: '1', name: 'Staff Salary', amount: 720000 },
+  { id: '2', name: 'Rent', amount: 324000 },
+  { id: '3', name: 'Marketing', amount: 351600 },
+  { id: '4', name: 'Utilities', amount: 177600 },
+  { id: '5', name: 'Maintenance', amount: 71996.4 },
+];
+
+const initialInvestments: InvestmentItem[] = [
+  { id: '1', name: "Building (Interiors)", cost: 10000000, rate: 5 },
+  { id: '2', name: "Machinery/Equipment", cost: 20000000, rate: 15 },
+  { id: '3', name: "Franchise", cost: 3000000, rate: 25 },
+  { id: '4', name: "Furniture & fixtures", cost: 5000000, rate: 10 },
+  { id: '5', name: "Computers/Electronics", cost: 1500000, rate: 15 },
+  { id: '6', name: "Software", cost: 500000, rate: 25 }
 ];
 
 const initialAssumptions: Assumptions = {
@@ -207,8 +228,8 @@ const formatCurrency = (value: number): string => {
   }
 };
 
-const calculateDepreciation = (year: number): number => {
-  return assets.reduce((total, asset) => {
+const calculateDepreciation = (year: number, investments: InvestmentItem[]): number => {
+  return investments.reduce((total, asset) => {
     let assetValue = asset.cost;
     for (let i = 0; i <= year; i++) {
       if (i === year) {
@@ -220,12 +241,12 @@ const calculateDepreciation = (year: number): number => {
   }, 0);
 };
 
-const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
+const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[], investments: InvestmentItem[]): MonthlyData[] => {
   const data: MonthlyData[] = [];
   const months = assumptions.projectLife * 12;
   
   // Add month 0 (March 2025) with just the initial investment
-  const initialInvestment = -assets.reduce((sum, a) => sum + a.cost, 0);
+  const initialInvestment = -investments.reduce((sum, a) => sum + a.cost, 0);
   data.push({
     month: '25-03', // March 2025
     year: 0,
@@ -297,13 +318,13 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
     const totalRevenue = subscriptionRevenue + ptRevenue;
     
     const expenseIncreaseFactor = Math.pow(1 + assumptions.annualExpenseIncrease / 100, year);
-    const monthlyExpenses = (720000 + 324000 + 351600 + 177600 + 71996.4) * expenseIncreaseFactor;
+    const monthlyExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0) * expenseIncreaseFactor;
     
     const grossMargin = totalRevenue - monthlyExpenses;
     const grossMarginPercentage = (grossMargin / totalRevenue) * 100;
     const ptSalesPercentage = (ptRevenue / totalRevenue) * 100;
     
-    const monthlyDepreciation = calculateDepreciation(year) / 12;
+    const monthlyDepreciation = calculateDepreciation(year, investments) / 12;
     
     // Calculate loan components first
     const loanInterest = loanBalance * monthlyRate;
@@ -473,17 +494,26 @@ const calculateValuationMetrics = (data: MonthlyData[], assumptions: Assumptions
 type NumericInputs = Exclude<keyof Assumptions, 'useLoan'>;
 
 function App() {
+  // Add new state for result tabs
+  const [inputTabValue, setInputTabValue] = useState(0);
+  const [resultTabValue, setResultTabValue] = useState(0);
   const [assumptions, setAssumptions] = useState<Assumptions>(initialAssumptions);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [tabValue, setTabValue] = useState(0);
   const [valuationMetrics, setValuationMetrics] = useState<{ npv: number; irr: number; mirr: number; paybackPeriod: number; discountedPaybackPeriod: number } | null>(null);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>(initialExpenses);
+  const [investments, setInvestments] = useState<InvestmentItem[]>(initialInvestments);
 
-  const handleTabChange = (_event: TabChangeEvent, newValue: number) => {
-    setTabValue(newValue);
+  // Update tab handlers
+  const handleInputTabChange = (_event: TabChangeEvent, newValue: number) => {
+    setInputTabValue(newValue);
+  };
+
+  const handleResultTabChange = (_event: TabChangeEvent, newValue: number) => {
+    setResultTabValue(newValue);
   };
 
   const handleCalculate = () => {
-    const data = calculateMonthlyData(assumptions);
+    const data = calculateMonthlyData(assumptions, expenses, investments);
     setMonthlyData(data);
     
     // Pass assumptions to calculateValuationMetrics
@@ -511,6 +541,46 @@ function App() {
     }));
   };
 
+  const handleAddExpense = () => {
+    const newExpense: ExpenseItem = {
+      id: Date.now().toString(),
+      name: 'New Expense',
+      amount: 0
+    };
+    setExpenses([...expenses, newExpense]);
+  };
+
+  const handleAddInvestment = () => {
+    const newInvestment: InvestmentItem = {
+      id: Date.now().toString(),
+      name: 'New Investment',
+      cost: 0,
+      rate: 0
+    };
+    setInvestments([...investments, newInvestment]);
+  };
+
+  const handleExpenseChange = (id: string, field: keyof ExpenseItem, value: any) => {
+    setExpenses(expenses.map(expense => 
+      expense.id === id ? { ...expense, [field]: value } : expense
+    ));
+  };
+
+  const handleInvestmentChange = (id: string, field: keyof InvestmentItem, value: any) => {
+    setInvestments(investments.map(investment => 
+      investment.id === id ? { ...investment, [field]: value } : investment
+    ));
+  };
+
+  // Add calculation helpers
+  const calculateTotalMonthlyExpense = (): number => {
+    return expenses.reduce((total, expense) => total + expense.amount, 0);
+  };
+
+  const calculateTotalInvestment = (): number => {
+    return investments.reduce((total, investment) => total + investment.cost, 0);
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -522,186 +592,293 @@ function App() {
           <Typography variant="h6" gutterBottom sx={{ mb: 3, color: '#1976d2' }}>
             Key Assumptions
           </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Monthly Target Sales"
-                type="number"
-                value={assumptions.monthlyNewMembers === 0 ? '' : assumptions.monthlyNewMembers}  // Handle zero values
-                onChange={handleInputChange('monthlyNewMembers')}
-                variant="outlined"
-              />
+
+          <Tabs 
+            value={inputTabValue} 
+            onChange={handleInputTabChange}
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              mb: 3
+            }}
+          >
+            <Tab label="Basic Assumptions" sx={{ textTransform: 'none' }} />
+            <Tab label="Monthly Expenses" sx={{ textTransform: 'none' }} />
+            <Tab label="Investments" sx={{ textTransform: 'none' }} />
+          </Tabs>
+
+          <TabPanel value={inputTabValue} index={0}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Monthly Target Sales"
+                  type="number"
+                  value={assumptions.monthlyNewMembers === 0 ? '' : assumptions.monthlyNewMembers}  // Handle zero values
+                  onChange={handleInputChange('monthlyNewMembers')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="PT Penetration (%)"
+                  type="number"
+                  value={assumptions.ptPenetration}
+                  onChange={handleInputChange('ptPenetration')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="PT Subscription Price (INR)"
+                  type="number"
+                  value={assumptions.ptSubscriptionPrice}
+                  onChange={handleInputChange('ptSubscriptionPrice')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="PT Share with Gym (%)"
+                  type="number"
+                  value={assumptions.ptShareWithGym}
+                  onChange={handleInputChange('ptShareWithGym')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Maximum Capacity"
+                  type="number"
+                  value={assumptions.maxCapacity}
+                  onChange={handleInputChange('maxCapacity')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Subscription Price (INR)"
+                  type="number"
+                  value={assumptions.subscriptionPrice}
+                  onChange={handleInputChange('subscriptionPrice')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Annual Price Increase (%)"
+                  type="number"
+                  value={assumptions.annualPriceIncrease}
+                  onChange={handleInputChange('annualPriceIncrease')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Discount Rate (%)"
+                  type="number"
+                  value={assumptions.discountRate}
+                  onChange={handleInputChange('discountRate')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Project Life (Years)"
+                  type="number"
+                  value={assumptions.projectLife}
+                  onChange={handleInputChange('projectLife')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Reinvestment Rate (%)"
+                  type="number"
+                  value={assumptions.reinvestmentRate}
+                  onChange={handleInputChange('reinvestmentRate')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Financing Rate (%)"
+                  type="number"
+                  value={assumptions.financingRate}
+                  onChange={handleInputChange('financingRate')}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Use Loan"
+                  select
+                  value={assumptions.useLoan.toString()}
+                  onChange={handleInputChange('useLoan')}
+                  variant="outlined"
+                >
+                  <MenuItem value="true">Yes</MenuItem>
+                  <MenuItem value="false">No</MenuItem>
+                </TextField>
+              </Grid>
+              {assumptions.useLoan && (
+                <>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Loan Amount (INR)"
+                      type="number"
+                      value={assumptions.loanAmount}
+                      onChange={handleInputChange('loanAmount')}
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Loan Tenure (Years)"
+                      type="number"
+                      value={assumptions.loanTenure}
+                      onChange={handleInputChange('loanTenure')}
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Loan Interest Rate (%)"
+                      type="number"
+                      value={assumptions.loanInterest}
+                      onChange={handleInputChange('loanInterest')}
+                      variant="outlined"
+                    />
+                  </Grid>
+                </>
+              )}
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="PT Penetration (%)"
-                type="number"
-                value={assumptions.ptPenetration}
-                onChange={handleInputChange('ptPenetration')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="PT Subscription Price (INR)"
-                type="number"
-                value={assumptions.ptSubscriptionPrice}
-                onChange={handleInputChange('ptSubscriptionPrice')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="PT Share with Gym (%)"
-                type="number"
-                value={assumptions.ptShareWithGym}
-                onChange={handleInputChange('ptShareWithGym')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Maximum Capacity"
-                type="number"
-                value={assumptions.maxCapacity}
-                onChange={handleInputChange('maxCapacity')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Subscription Price (INR)"
-                type="number"
-                value={assumptions.subscriptionPrice}
-                onChange={handleInputChange('subscriptionPrice')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Annual Price Increase (%)"
-                type="number"
-                value={assumptions.annualPriceIncrease}
-                onChange={handleInputChange('annualPriceIncrease')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Discount Rate (%)"
-                type="number"
-                value={assumptions.discountRate}
-                onChange={handleInputChange('discountRate')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Project Life (Years)"
-                type="number"
-                value={assumptions.projectLife}
-                onChange={handleInputChange('projectLife')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Reinvestment Rate (%)"
-                type="number"
-                value={assumptions.reinvestmentRate}
-                onChange={handleInputChange('reinvestmentRate')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Financing Rate (%)"
-                type="number"
-                value={assumptions.financingRate}
-                onChange={handleInputChange('financingRate')}
-                variant="outlined"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Use Loan"
-                select
-                value={assumptions.useLoan.toString()}
-                onChange={handleInputChange('useLoan')}
-                variant="outlined"
-              >
-                <MenuItem value="true">Yes</MenuItem>
-                <MenuItem value="false">No</MenuItem>
-              </TextField>
-            </Grid>
-            {assumptions.useLoan && (
-              <>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Loan Amount (INR)"
-                    type="number"
-                    value={assumptions.loanAmount}
-                    onChange={handleInputChange('loanAmount')}
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Loan Tenure (Years)"
-                    type="number"
-                    value={assumptions.loanTenure}
-                    onChange={handleInputChange('loanTenure')}
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Loan Interest Rate (%)"
-                    type="number"
-                    value={assumptions.loanInterest}
-                    onChange={handleInputChange('loanInterest')}
-                    variant="outlined"
-                  />
-                </Grid>
-              </>
-            )}
-            <Grid item xs={12}>
-              <Button 
-                variant="contained" 
-                onClick={handleCalculate}
-                size="large"
-                sx={{ 
-                  mt: 2,
-                  px: 4,
-                  py: 1.5,
-                  backgroundColor: '#1976d2',
-                  '&:hover': {
-                    backgroundColor: '#1565c0',
-                  }
-                }}
-              >
-                Calculate
+          </TabPanel>
+
+          <TabPanel value={inputTabValue} index={1}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Button onClick={handleAddExpense} variant="outlined">
+                Add Expense
               </Button>
-            </Grid>
-          </Grid>
+              <Typography variant="h6" sx={{ color: '#1976d2' }}>
+                Total Monthly Expense: {formatCurrency(calculateTotalMonthlyExpense())}
+              </Typography>
+            </Box>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Expense Name</TableCell>
+                    <TableCell align="right">Monthly Amount (₹)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {expenses.map((expense) => (
+                    <TableRow key={expense.id}>
+                      <TableCell>
+                        <TextField
+                          fullWidth
+                          value={expense.name}
+                          onChange={(e) => handleExpenseChange(expense.id, 'name', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          type="number"
+                          value={expense.amount}
+                          onChange={(e) => handleExpenseChange(expense.id, 'amount', parseFloat(e.target.value))}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </TabPanel>
+
+          <TabPanel value={inputTabValue} index={2}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Button onClick={handleAddInvestment} variant="outlined">
+                Add Investment
+              </Button>
+              <Typography variant="h6" sx={{ color: '#1976d2' }}>
+                Total Investment: {formatCurrency(calculateTotalInvestment())}
+              </Typography>
+            </Box>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Investment Name</TableCell>
+                    <TableCell align="right">Cost (₹)</TableCell>
+                    <TableCell align="right">Depreciation Rate (%)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {investments.map((investment) => (
+                    <TableRow key={investment.id}>
+                      <TableCell>
+                        <TextField
+                          fullWidth
+                          value={investment.name}
+                          onChange={(e) => handleInvestmentChange(investment.id, 'name', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          type="number"
+                          value={investment.cost}
+                          onChange={(e) => handleInvestmentChange(investment.id, 'cost', parseFloat(e.target.value))}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          type="number"
+                          value={investment.rate}
+                          onChange={(e) => handleInvestmentChange(investment.id, 'rate', parseFloat(e.target.value))}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </TabPanel>
+
+          <Box sx={{ mt: 3 }}>
+            <Button 
+              variant="contained" 
+              onClick={handleCalculate}
+              size="large"
+              sx={{ 
+                px: 4,
+                py: 1.5,
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#1565c0',
+                }
+              }}
+            >
+              Calculate
+            </Button>
+          </Box>
         </Paper>
 
         {monthlyData.length > 0 && (
@@ -756,8 +933,8 @@ function App() {
 
             <Paper sx={{ mb: 4, boxShadow: 3 }}>
               <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange}
+                value={resultTabValue} 
+                onChange={handleResultTabChange}
                 sx={{
                   borderBottom: 1,
                   borderColor: 'divider',
@@ -768,7 +945,7 @@ function App() {
                 <Tab label="Depreciation Schedule" sx={{ textTransform: 'none' }} />
               </Tabs>
 
-              <TabPanel value={tabValue} index={0}>
+              <TabPanel value={resultTabValue} index={0}>
                 <Box sx={{ mb: 4 }}>
                   <LineChart width={1000} height={400} data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -842,7 +1019,7 @@ function App() {
                 </TableContainer>
               </TabPanel>
 
-              <TabPanel value={tabValue} index={1}>
+              <TabPanel value={resultTabValue} index={1}>
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -858,7 +1035,7 @@ function App() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {assets.map(asset => {
+                      {investments.map(asset => {
                         let currentValue = asset.cost;
                         const yearlyDepreciation = [];
                         
