@@ -430,13 +430,53 @@ const calculateMIRR = (monthlyFlows: number[], reinvestmentRate: number, financi
   return ((1 + monthlyMirr) ** 12 - 1) * 100;
 };
 
+interface ValuationMetrics {
+  npv: number;
+  irr: number;
+  mirr: number;
+  paybackPeriod: number;
+  discountedPaybackPeriod: number;
+}
+
+const calculateValuationMetrics = (data: MonthlyData[]): ValuationMetrics | null => {
+  if (!data.length) return null;
+
+  const monthlyFCF = data.map(d => d.fcf);
+  
+  // Log analysis
+  console.log('=== Monthly Cash Flow Analysis ===');
+  console.log('Month | Date | Cash Flow (₹) | Cumulative CF (₹) | Cumulative DCF (₹)');
+  console.log('--------------------------------------------------------------------');
+  monthlyFCF.forEach((cf, i) => {
+    const monthData = data[i];
+    console.log(
+      `${i} | ${monthData.month} | ${formatCurrency(cf)} | ${formatCurrency(monthData.cumulativeFcf)} | ${formatCurrency(monthData.cumulativeDcf)}`
+    );
+  });
+  console.log('--------------------------------------------------------------------');
+  
+  const npv = data[data.length - 1].cumulativeNpv;
+  const irr = calculateIRR(monthlyFCF);
+  const mirr = calculateMIRR(monthlyFCF, assumptions.reinvestmentRate, assumptions.financingRate);
+  const paybackPeriod = data.findIndex(d => d.cumulativeFcf > 0) / 12;
+  const discountedPaybackPeriod = data.findIndex(d => d.cumulativeDcf > 0) / 12;
+
+  return { 
+    npv, 
+    irr, 
+    mirr, 
+    paybackPeriod,
+    discountedPaybackPeriod
+  };
+};
+
 type NumericInputs = Exclude<keyof Assumptions, 'useLoan'>;
 
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(initialAssumptions);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [tabValue, setTabValue] = useState(0);
-  const [valuationMetrics, setValuationMetrics] = useState<{ npv: number; irr: number; mirr: number; paybackPeriod: number } | null>(null);
+  const [valuationMetrics, setValuationMetrics] = useState<{ npv: number; irr: number; mirr: number; paybackPeriod: number; discountedPaybackPeriod: number } | null>(null);
 
   const handleTabChange = (_event: TabChangeEvent, newValue: number) => {
     setTabValue(newValue);
@@ -492,8 +532,9 @@ function App() {
     const irr = calculateIRR(monthlyFCF);
     const mirr = calculateMIRR(monthlyFCF, assumptions.reinvestmentRate, assumptions.financingRate);
     const paybackPeriod = data.findIndex(d => d.cumulativeFcf > 0) / 12;
+    const discountedPaybackPeriod = data.findIndex(d => d.cumulativeDcf > 0) / 12;
 
-    return { npv, irr, mirr, paybackPeriod };
+    return { npv, irr, mirr, paybackPeriod, discountedPaybackPeriod };
   };
 
   return (
@@ -666,7 +707,7 @@ function App() {
                 Valuation Metrics
               </Typography>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={6} md={2}>
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>NPV</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
@@ -674,7 +715,7 @@ function App() {
                     </Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={6} md={2}>
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>IRR</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
@@ -682,7 +723,7 @@ function App() {
                     </Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={6} md={2}>
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>MIRR</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
@@ -690,11 +731,19 @@ function App() {
                     </Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={6} md={3}>
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>Payback Period</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
                       {valuationMetrics?.paybackPeriod ? valuationMetrics.paybackPeriod.toFixed(2) + ' years' : '0 years'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
+                    <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>Discounted Payback</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                      {valuationMetrics?.discountedPaybackPeriod ? valuationMetrics.discountedPaybackPeriod.toFixed(2) + ' years' : '0 years'}
                     </Typography>
                   </Paper>
                 </Grid>
