@@ -444,7 +444,7 @@ interface ValuationMetrics {
   discountedPaybackPeriod: number;
 }
 
-const calculateValuationMetrics = (data: MonthlyData[]): ValuationMetrics | null => {
+const calculateValuationMetrics = (data: MonthlyData[], assumptions: Assumptions): ValuationMetrics | null => {
   if (!data.length) return null;
 
   const monthlyFCF = data.map(d => d.fcf);
@@ -467,13 +467,7 @@ const calculateValuationMetrics = (data: MonthlyData[]): ValuationMetrics | null
   const paybackPeriod = data.findIndex(d => d.cumulativeFcf > 0) / 12;
   const discountedPaybackPeriod = data.findIndex(d => d.cumulativeDcf > 0) / 12;
 
-  return { 
-    npv, 
-    irr, 
-    mirr, 
-    paybackPeriod,
-    discountedPaybackPeriod
-  };
+  return { npv, irr, mirr, paybackPeriod, discountedPaybackPeriod };
 };
 
 type NumericInputs = Exclude<keyof Assumptions, 'useLoan'>;
@@ -492,8 +486,8 @@ function App() {
     const data = calculateMonthlyData(assumptions);
     setMonthlyData(data);
     
-    // Calculate metrics immediately after setting monthly data
-    const metrics = calculateValuationMetrics(data);
+    // Pass assumptions to calculateValuationMetrics
+    const metrics = calculateValuationMetrics(data, assumptions);
     setValuationMetrics(metrics);
   };
 
@@ -515,32 +509,6 @@ function App() {
       ...prev,
       [numField]: value
     }));
-  };
-
-  const calculateValuationMetrics = (data: MonthlyData[]) => {
-    if (!data.length) return null;
-
-    // Use monthly FCF including month 0 (March)
-    const monthlyFCF = data.map(d => d.fcf);
-    
-    console.log('=== Monthly Cash Flow Analysis ===');
-    console.log('Month | Date | Cash Flow (₹) | Cumulative CF (₹)');
-    console.log('------------------------------------------------');
-    monthlyFCF.forEach((cf, i) => {
-      const monthData = data[i];
-      console.log(
-        `${i} | ${monthData.month} | ${formatCurrency(cf)} | ${formatCurrency(monthData.cumulativeFcf)}`
-      );
-    });
-    console.log('------------------------------------------------');
-    
-    const npv = data[data.length - 1].cumulativeNpv;
-    const irr = calculateIRR(monthlyFCF);
-    const mirr = calculateMIRR(monthlyFCF, assumptions.reinvestmentRate, assumptions.financingRate);
-    const paybackPeriod = data.findIndex(d => d.cumulativeFcf > 0) / 12;
-    const discountedPaybackPeriod = data.findIndex(d => d.cumulativeDcf > 0) / 12;
-
-    return { npv, irr, mirr, paybackPeriod, discountedPaybackPeriod };
   };
 
   return (
