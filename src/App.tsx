@@ -217,11 +217,48 @@ const calculateDepreciation = (year: number): number => {
 const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
   const data: MonthlyData[] = [];
   const months = assumptions.projectLife * 12;
-  let totalMembers = 0;
-  let cumulativeFcf = 0;
-  let cumulativeDcf = 0;
-  let cumulativeNpv = 0;
   
+  // Add month 0 (March 2025) with just the initial investment
+  const initialInvestment = -assets.reduce((sum, a) => sum + a.cost, 0);
+  data.push({
+    month: '25-03', // March 2025
+    year: 0,
+    targetSales: 0,
+    newMembers: 0,
+    repeatMembers: 0,
+    expiredMembers: 0,
+    totalMembers: 0,
+    startMembers: 0,
+    subscriptionRevenue: 0,
+    ptRevenue: 0,
+    totalRevenue: 0,
+    expenses: 0,
+    grossMargin: 0,
+    grossMarginPercentage: 0,
+    ptSalesPercentage: 0,
+    depreciation: 0,
+    interest: 0,
+    ebitda: 0,
+    ebitdaPercentage: 0,
+    pbt: 0,
+    tax: 0,
+    pat: 0,
+    fcf: initialInvestment,
+    dcf: initialInvestment,
+    cumulativeFcf: initialInvestment,
+    cumulativeDcf: initialInvestment,
+    cumulativeNpv: initialInvestment,
+    emi: 0,
+    loanInterest: 0,
+    loanPrincipal: 0,
+    loanBalance: 0
+  });
+
+  let totalMembers = 0;
+  let cumulativeFcf = initialInvestment;
+  let cumulativeDcf = initialInvestment;
+  let cumulativeNpv = initialInvestment;
+
   // Calculate EMI if loan is used
   const monthlyRate = assumptions.useLoan ? (assumptions.loanInterest / 12 / 100) : 0;
   const loanTenureMonths = assumptions.loanTenure * 12;
@@ -231,9 +268,10 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
   
   let loanBalance = assumptions.useLoan ? assumptions.loanAmount : 0;
 
-  for (let t = 0; t < months; t++) {
-    const year = Math.floor(t / 12);
-    const date = new Date(2025, 3 + t);
+  // Start operational months from April 2025 (t=1 to months)
+  for (let t = 1; t <= months; t++) {
+    const year = Math.floor((t - 1) / 12); // Adjust year calculation
+    const date = new Date(2025, 3 + (t - 1)); // Start from April (month 3)
     
     const repeatMembers = t < 12 ? 0 : Math.floor(data[t - 12].newMembers * (assumptions.retentionRate / 100));
     const expiredMembers = t < 12 ? 0 : Math.floor(data[t - 12].newMembers * (1 - assumptions.retentionRate / 100));
@@ -275,19 +313,15 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
     const tax = pbt * (assumptions.taxRate / 100);
     const pat = pbt - tax;
     
-    // Calculate FCF:
-    // 1. Start with PAT
-    // 2. Add back depreciation (non-cash expense)
-    // 3. Include full initial investment (not reduced by loan)
-    const fcf = pat + monthlyDepreciation - 
-                (t === 0 ? assets.reduce((sum, a) => sum + a.cost, 0) : 0);
+    // Calculate FCF (no initial investment deduction since we're past month 0)
+    const fcf = pat + monthlyDepreciation;
     
     cumulativeFcf += fcf;
     
+    // Discount from month 1 onwards
     const dcf = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
     cumulativeDcf += dcf;
     
-    // Calculate NPV
     const npv = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
     cumulativeNpv += npv;
 
@@ -440,17 +474,19 @@ function App() {
   const calculateValuationMetrics = (data: MonthlyData[]) => {
     if (!data.length) return null;
 
-    // Use monthly FCF directly instead of yearly aggregation
+    // Use monthly FCF including month 0 (March)
     const monthlyFCF = data.map(d => d.fcf);
     
-    // Log monthly cash flows
     console.log('=== Monthly Cash Flow Analysis ===');
-    console.log('Month | Cash Flow (₹)');
-    console.log('------------------');
+    console.log('Month | Date | Cash Flow (₹) | Cumulative CF (₹)');
+    console.log('------------------------------------------------');
     monthlyFCF.forEach((cf, i) => {
-      console.log(`${i + 1} | ${formatCurrency(cf)}`);
+      const monthData = data[i];
+      console.log(
+        `${i} | ${monthData.month} | ${formatCurrency(cf)} | ${formatCurrency(monthData.cumulativeFcf)}`
+      );
     });
-    console.log('------------------');
+    console.log('------------------------------------------------');
     
     const npv = data[data.length - 1].cumulativeNpv;
     const irr = calculateIRR(monthlyFCF);
