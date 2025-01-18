@@ -95,11 +95,11 @@ interface InvestmentItem {
 }
 
 const initialExpenses: ExpenseItem[] = [
-  { id: '1', name: 'Staff Salary', amount: 720000 },
-  { id: '2', name: 'Rent', amount: 324000 },
-  { id: '3', name: 'Marketing', amount: 351600 },
-  { id: '4', name: 'Utilities', amount: 177600 },
-  { id: '5', name: 'Maintenance', amount: 71996.4 },
+  { id: '1', name: 'Rent', amount: 620000 },
+  { id: '2', name: 'Salary', amount: 270000 },
+  { id: '3', name: 'Utilities', amount: 293000 },
+  { id: '4', name: 'Franchise fee', amount: 148000 },
+  { id: '5', name: 'Marketing', amount: 60000 },
 ];
 
 const initialInvestments: InvestmentItem[] = [
