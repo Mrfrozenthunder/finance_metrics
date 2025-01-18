@@ -57,6 +57,7 @@ interface MonthlyData {
   dcf: number;
   cumulativeFcf: number;
   cumulativeDcf: number;
+  cumulativeNpv: number;  // Add this new property
 }
 
 interface Asset {
@@ -115,7 +116,8 @@ const metrics = [
   { label: 'FCF', key: 'fcf', format: true },
   { label: 'Cumulative FCF', key: 'cumulativeFcf', format: true },
   { label: 'DCF', key: 'dcf', format: true },
-  { label: 'Cumulative DCF', key: 'cumulativeDcf', format: true }
+  { label: 'Cumulative DCF', key: 'cumulativeDcf', format: true },
+  { label: 'Cumulative NPV', key: 'cumulativeNpv', format: true }  // Add this new metric
 ];
 
 const theme = createTheme({
@@ -198,6 +200,7 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
   let totalMembers = 0;
   let cumulativeFcf = 0;
   let cumulativeDcf = 0;
+  let cumulativeNpv = 0;
 
   for (let t = 0; t < months; t++) {
     const year = Math.floor(t / 12);
@@ -242,6 +245,10 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
     
     const dcf = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
     cumulativeDcf += dcf;
+    
+    // Calculate NPV properly for each period
+    const npv = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
+    cumulativeNpv += npv;
 
     data.push({
       month: `${date.getFullYear().toString().slice(-2)}-${String(date.getMonth() + 1).padStart(2, '0')}`,
@@ -269,7 +276,8 @@ const calculateMonthlyData = (assumptions: Assumptions): MonthlyData[] => {
       fcf,
       dcf,
       cumulativeFcf,
-      cumulativeDcf
+      cumulativeDcf,
+      cumulativeNpv
     });
   }
 
@@ -344,7 +352,7 @@ function App() {
     }, {} as Record<number, number>);
 
     const fcfArray = Object.values(yearlyFCF);
-    const npv = monthlyData[monthlyData.length - 1].cumulativeDcf;
+    const npv = monthlyData[monthlyData.length - 1].cumulativeNpv;
     const irr = calculateIRR(fcfArray);
     const mirr = calculateMIRR(fcfArray, assumptions.reinvestmentRate, assumptions.financingRate);
     const paybackPeriod = monthlyData.findIndex(d => d.cumulativeFcf > 0) / 12;
@@ -537,11 +545,22 @@ function App() {
                   </LineChart>
                 </Box>
 
-                <TableContainer>
-                  <Table size="small">
+                <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
+                  <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                        <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>Metric</TableCell>
+                        <TableCell 
+                          sx={{ 
+                            fontWeight: 'bold', 
+                            minWidth: 150,
+                            position: 'sticky',
+                            left: 0,
+                            backgroundColor: '#f5f5f5',
+                            zIndex: 3
+                          }}
+                        >
+                          Metric
+                        </TableCell>
                         {monthlyData.map(data => (
                           <TableCell key={data.month} align="right" sx={{ fontWeight: 'bold', minWidth: 100 }}>
                             {data.month}
@@ -552,7 +571,19 @@ function App() {
                     <TableBody>
                       {metrics.map(({ label, key, format, percentage }) => (
                         <TableRow key={key} hover>
-                          <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>{label}</TableCell>
+                          <TableCell 
+                            sx={{ 
+                              fontWeight: 'bold', 
+                              minWidth: 150,
+                              position: 'sticky',
+                              left: 0,
+                              backgroundColor: 'white',
+                              zIndex: 2,
+                              borderRight: '1px solid rgba(224, 224, 224, 1)'
+                            }}
+                          >
+                            {label}
+                          </TableCell>
                           {monthlyData.map(data => (
                             <TableCell key={`${data.month}-${key}`} align="right" sx={{ minWidth: 100 }}>
                               {percentage 
