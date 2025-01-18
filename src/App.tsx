@@ -380,12 +380,13 @@ function App() {
 
   // Update the handleInputChange function to handle boolean values
   const handleInputChange = (field: keyof Assumptions) => (event: InputChangeEvent) => {
-    let value: number | boolean | '';
+    let value: number | boolean;
     
     if (field === 'useLoan') {
       value = event.target.value === 'true';
     } else {
-      value = event.target.value === '' ? '' : Number(event.target.value);
+      // Convert empty string to 0 instead of keeping it as string
+      value = event.target.value === '' ? 0 : Number(event.target.value);
     }
     
     setAssumptions(prev => ({
