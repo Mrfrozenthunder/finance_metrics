@@ -693,15 +693,20 @@ function App() {
                           >
                             {label}
                           </TableCell>
-                          {monthlyData.map(data => (
-                            <TableCell key={`${data.month}-${key}`} align="right" sx={{ minWidth: 100 }}>
-                              {percentage 
-                                ? `${Math.round(data[key as keyof MonthlyData])}%`
-                                : format 
-                                  ? formatCurrency(data[key as keyof MonthlyData])
-                                  : Math.round(data[key as keyof MonthlyData])}
-                            </TableCell>
-                          ))}
+                          {monthlyData.map(data => {
+                            const value = data[key as keyof MonthlyData];
+                            if (!isNumber(value)) return <TableCell key={`${data.month}-${key}`} align="right">-</TableCell>;
+                            
+                            return (
+                              <TableCell key={`${data.month}-${key}`} align="right" sx={{ minWidth: 100 }}>
+                                {percentage 
+                                  ? `${Math.round(value)}%`
+                                  : format 
+                                    ? formatCurrency(value)
+                                    : Math.round(value)}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -759,3 +764,8 @@ function App() {
 }
 
 export default App;
+
+// Add helper function for type checking
+const isNumber = (value: unknown): value is number => {
+  return typeof value === 'number' && !isNaN(value);
+};
