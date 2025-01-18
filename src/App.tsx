@@ -6,6 +6,10 @@ import {
 } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
+// Fix type declarations for event handlers
+type InputChangeEvent = React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>;
+type TabChangeEvent = React.SyntheticEvent<{}, Event>;
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -365,7 +369,7 @@ function App() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [tabValue, setTabValue] = useState(0);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: TabChangeEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -375,12 +379,14 @@ function App() {
   };
 
   // Update the handleInputChange function to handle boolean values
-  const handleInputChange = (field: keyof Assumptions) => (
-    event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
-  ) => {
-    const value = field === 'useLoan' 
-      ? event.target.value === 'true'
-      : event.target.value === '' ? '' : Number(event.target.value);
+  const handleInputChange = (field: keyof Assumptions) => (event: InputChangeEvent) => {
+    let value: number | boolean | '';
+    
+    if (field === 'useLoan') {
+      value = event.target.value === 'true';
+    } else {
+      value = event.target.value === '' ? '' : Number(event.target.value);
+    }
     
     setAssumptions(prev => ({
       ...prev,
@@ -427,7 +433,7 @@ function App() {
                 label="Monthly Target Sales"
                 type="number"
                 value={assumptions.monthlyNewMembers}
-                onChange={handleInputChange('monthlyNewMembers')}
+                onChange={handleInputChange('monthlyNewMembers') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -437,7 +443,7 @@ function App() {
                 label="Maximum Capacity"
                 type="number"
                 value={assumptions.maxCapacity}
-                onChange={handleInputChange('maxCapacity')}
+                onChange={handleInputChange('maxCapacity') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -447,7 +453,7 @@ function App() {
                 label="Subscription Price (INR)"
                 type="number"
                 value={assumptions.subscriptionPrice}
-                onChange={handleInputChange('subscriptionPrice')}
+                onChange={handleInputChange('subscriptionPrice') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -457,7 +463,7 @@ function App() {
                 label="Annual Price Increase (%)"
                 type="number"
                 value={assumptions.annualPriceIncrease}
-                onChange={handleInputChange('annualPriceIncrease')}
+                onChange={handleInputChange('annualPriceIncrease') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -467,7 +473,7 @@ function App() {
                 label="Discount Rate (%)"
                 type="number"
                 value={assumptions.discountRate}
-                onChange={handleInputChange('discountRate')}
+                onChange={handleInputChange('discountRate') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -477,7 +483,7 @@ function App() {
                 label="Project Life (Years)"
                 type="number"
                 value={assumptions.projectLife}
-                onChange={handleInputChange('projectLife')}
+                onChange={handleInputChange('projectLife') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -487,7 +493,7 @@ function App() {
                 label="Reinvestment Rate (%)"
                 type="number"
                 value={assumptions.reinvestmentRate}
-                onChange={handleInputChange('reinvestmentRate')}
+                onChange={handleInputChange('reinvestmentRate') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -497,7 +503,7 @@ function App() {
                 label="Financing Rate (%)"
                 type="number"
                 value={assumptions.financingRate}
-                onChange={handleInputChange('financingRate')}
+                onChange={handleInputChange('financingRate') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               />
             </Grid>
@@ -510,7 +516,7 @@ function App() {
                 label="Use Loan"
                 select
                 value={assumptions.useLoan.toString()}
-                onChange={handleInputChange('useLoan')}
+                onChange={handleInputChange('useLoan') as React.ChangeEventHandler<HTMLInputElement>}
                 variant="outlined"
               >
                 <MenuItem value="true">Yes</MenuItem>
@@ -525,7 +531,7 @@ function App() {
                     label="Loan Amount (INR)"
                     type="number"
                     value={assumptions.loanAmount}
-                    onChange={handleInputChange('loanAmount')}
+                    onChange={handleInputChange('loanAmount') as React.ChangeEventHandler<HTMLInputElement>}
                     variant="outlined"
                   />
                 </Grid>
@@ -535,7 +541,7 @@ function App() {
                     label="Loan Tenure (Years)"
                     type="number"
                     value={assumptions.loanTenure}
-                    onChange={handleInputChange('loanTenure')}
+                    onChange={handleInputChange('loanTenure') as React.ChangeEventHandler<HTMLInputElement>}
                     variant="outlined"
                   />
                 </Grid>
@@ -545,7 +551,7 @@ function App() {
                     label="Loan Interest Rate (%)"
                     type="number"
                     value={assumptions.loanInterest}
-                    onChange={handleInputChange('loanInterest')}
+                    onChange={handleInputChange('loanInterest') as React.ChangeEventHandler<HTMLInputElement>}
                     variant="outlined"
                   />
                 </Grid>
