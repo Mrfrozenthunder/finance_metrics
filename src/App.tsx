@@ -73,6 +73,7 @@ interface MonthlyData {
   loanInterest: number;
   loanPrincipal: number;
   loanBalance: number;
+  fcfPercentage: number;  // Add this new property
 }
 
 interface Asset {
@@ -161,6 +162,7 @@ const metrics = [
   { label: 'Loan Principal', key: 'loanPrincipal', format: true },
   { label: 'Loan Balance', key: 'loanBalance', format: true },
   { label: 'FCF', key: 'fcf', format: true },
+  { label: 'FCF %', key: 'fcfPercentage', percentage: true },  // Add this new metric
   { label: 'Cumulative FCF', key: 'cumulativeFcf', format: true },
   { label: 'DCF', key: 'dcf', format: true },
   { label: 'Cumulative DCF', key: 'cumulativeDcf', format: true },
@@ -278,7 +280,8 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
     emi: 0,
     loanInterest: 0,
     loanPrincipal: 0,
-    loanBalance: 0
+    loanBalance: 0,
+    fcfPercentage: 0
   });
 
   let totalMembers = 0;
@@ -352,6 +355,9 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
     const npv = fcf / Math.pow(1 + assumptions.discountRate / 100, t / 12);
     cumulativeNpv += npv;
 
+    // Calculate FCF percentage
+    const fcfPercentage = totalRevenue !== 0 ? (fcf / totalRevenue) * 100 : 0;
+
     data.push({
       month: `${date.getFullYear().toString().slice(-2)}-${String(date.getMonth() + 1).padStart(2, '0')}`,
       year,
@@ -383,7 +389,8 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
       dcf,
       cumulativeFcf,
       cumulativeDcf,
-      cumulativeNpv
+      cumulativeNpv,
+      fcfPercentage
     });
   }
 
@@ -719,21 +726,19 @@ function App() {
                   variant="outlined"
                 />
               </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
-              </Grid>
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
-                  label="Use Loan"
-                  select
-                  value={assumptions.useLoan.toString()}
-                  onChange={handleInputChange('useLoan')}
+                  label="Salvage Value (%)"
+                  type="number"
+                  value={assumptions.salvageValue}
+                  onChange={handleInputChange('salvageValue')}
                   variant="outlined"
-                >
-                  <MenuItem value="true">Yes</MenuItem>
-                  <MenuItem value="false">No</MenuItem>
-                </TextField>
+                  helperText="Percentage of initial investment recoverable at end of project"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
               </Grid>
               {assumptions.useLoan && (
                 <>
