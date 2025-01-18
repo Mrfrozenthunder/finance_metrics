@@ -93,9 +93,9 @@ const initialAssumptions: Assumptions = {
   annualExpenseIncrease: 10,
   taxRate: 30,
   projectLife: 7,
-  discountRate: 12,
-  reinvestmentRate: 8,
-  financingRate: 12,
+  discountRate: 7,      // changed from 12
+  reinvestmentRate: 15, // changed from 8
+  financingRate: 10,    // changed from 12
   maxCapacity: 1000,
   retentionRate: 40,
   salvageValue: 10,
