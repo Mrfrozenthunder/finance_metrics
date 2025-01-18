@@ -390,13 +390,13 @@ function App() {
       return;
     }
 
-    // For numeric inputs, ensure we always have a number
+    // For numeric inputs, allow empty string to clear the field
     const numField = field as NumericInputs;
-    const parsed = event.target.value === '' ? 0 : parseFloat(event.target.value as string);
+    const value = event.target.value === '' ? '' : parseFloat(event.target.value as string);
     
     setAssumptions(prev => ({
       ...prev,
-      [numField]: parsed
+      [numField]: value
     }));
   };
 
@@ -438,7 +438,7 @@ function App() {
                 fullWidth
                 label="Monthly Target Sales"
                 type="number"
-                value={assumptions.monthlyNewMembers || ''}  // Handle zero values
+                value={assumptions.monthlyNewMembers === 0 ? '' : assumptions.monthlyNewMembers}  // Handle zero values
                 onChange={handleInputChange('monthlyNewMembers')}
                 variant="outlined"
               />
