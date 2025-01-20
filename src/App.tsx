@@ -1130,38 +1130,102 @@ function App() {
                   <Table>
                     <TableHead>
                       <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Asset</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Initial Cost</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Rate</TableCell>
+                        <TableCell sx={{ width: '20%', fontWeight: 'bold' }}>Asset</TableCell>
+                        <TableCell align="right" sx={{ width: '15%', fontWeight: 'bold' }}>Initial Cost</TableCell>
+                        <TableCell align="right" sx={{ width: '10%', fontWeight: 'bold' }}>Rate</TableCell>
                         {Array.from({ length: Number(assumptions.projectLife) }, (_, i) => (
-                          <TableCell key={i} align="right" sx={{ fontWeight: 'bold' }}>
+                          <TableCell key={i} align="right" sx={{ width: '8%', fontWeight: 'bold' }}>
                             Year {i + 1}
                           </TableCell>
                         ))}
+                        <TableCell align="center" sx={{ width: '30%', fontWeight: 'bold' }}>Total Depreciation</TableCell>
+                        <TableCell align="center" sx={{ width: '12%', fontWeight: 'bold' }}>% of Initial Cost</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {investments.map(asset => {
                         let currentValue = asset.cost;
                         const yearlyDepreciation = [];
+                        let totalDepreciation = 0;
                         
                         for (let i = 0; i < Number(assumptions.projectLife); i++) {
                           const depreciation = currentValue * (asset.rate / 100);
                           yearlyDepreciation.push(depreciation);
+                          totalDepreciation += depreciation;
                           currentValue -= depreciation;
                         }
 
                         return (
                           <TableRow key={asset.name} hover>
-                            <TableCell sx={{ fontWeight: 'bold' }}>{asset.name}</TableCell>
-                            <TableCell align="right">{formatCurrency(asset.cost)}</TableCell>
-                            <TableCell align="right">{asset.rate}%</TableCell>
+                            <TableCell sx={{ width: '20%', fontWeight: 'bold' }}>{asset.name}</TableCell>
+                            <TableCell align="right" sx={{ width: '30%' }}>{formatCurrency(asset.cost)}</TableCell>
+                            <TableCell align="right" sx={{ width: '10%' }}>{asset.rate}%</TableCell>
                             {yearlyDepreciation.map((dep, i) => (
-                              <TableCell key={i} align="right">{formatCurrency(dep)}</TableCell>
+                              <TableCell key={i} align="right" sx={{ width: '8%' }}>{formatCurrency(dep)}</TableCell>
                             ))}
+                            <TableCell align="right" sx={{ width: '15%', fontWeight: 'bold' }}>
+                              {formatCurrency(totalDepreciation)}
+                            </TableCell>
+                            <TableCell align="right" sx={{ width: '12%', fontWeight: 'bold' }}>
+                              {((totalDepreciation / asset.cost) * 100).toFixed(1)}%
+                            </TableCell>
                           </TableRow>
                         );
                       })}
+                      {/* Total Row */}
+                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                        <TableCell sx={{ width: '20%', fontWeight: 'bold' }}>Total</TableCell>
+                        <TableCell align="right" sx={{ width: '15%', fontWeight: 'bold' }}>
+                          {formatCurrency(investments.reduce((sum, asset) => sum + asset.cost, 0))}
+                        </TableCell>
+                        <TableCell align="right" sx={{ width: '10%' }}>-</TableCell>
+                        {Array.from({ length: Number(assumptions.projectLife) }, (_, yearIndex) => {
+                          const yearlyTotal = investments.reduce((sum, asset) => {
+                            let assetValue = asset.cost;
+                            for (let i = 0; i <= yearIndex; i++) {
+                              if (i === yearIndex) {
+                                return sum + (assetValue * (asset.rate / 100));
+                              }
+                              assetValue = assetValue * (1 - asset.rate / 100);
+                            }
+                            return sum;
+                          }, 0);
+                          return (
+                            <TableCell key={yearIndex} align="right" sx={{ fontWeight: 'bold', width: '8%' }}>
+                              {formatCurrency(yearlyTotal)}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell align="right" sx={{ width: '15%', fontWeight: 'bold' }}>
+                          {formatCurrency(
+                            investments.reduce((sum, asset) => {
+                              let total = 0;
+                              let value = asset.cost;
+                              for (let i = 0; i < Number(assumptions.projectLife); i++) {
+                                const dep = value * (asset.rate / 100);
+                                total += dep;
+                                value -= dep;
+                              }
+                              return sum + total;
+                            }, 0)
+                          )}
+                        </TableCell>
+                        <TableCell align="right" sx={{ width: '12%', fontWeight: 'bold' }}>
+                          {(
+                            investments.reduce((sum, asset) => {
+                              let total = 0;
+                              let value = asset.cost;
+                              for (let i = 0; i < Number(assumptions.projectLife); i++) {
+                                const dep = value * (asset.rate / 100);
+                                total += dep;
+                                value -= dep;
+                              }
+                              return sum + total;
+                            }, 0) / 
+                            investments.reduce((sum, asset) => sum + asset.cost, 0) * 100
+                          ).toFixed(1)}%
+                        </TableCell>
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>
