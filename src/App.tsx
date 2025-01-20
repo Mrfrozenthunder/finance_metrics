@@ -74,6 +74,7 @@ interface MonthlyData {
   loanPrincipal: number;
   loanBalance: number;
   fcfPercentage: number;  // Add this new property
+  ptMembers: number;
 }
 
 interface Asset {
@@ -144,6 +145,7 @@ const metrics = [
   { label: 'Expired Members', key: 'expiredMembers' },
   { label: 'Total Members', key: 'totalMembers' },
   { label: 'Subscription Revenue', key: 'subscriptionRevenue', format: true },
+  { label: 'PT Members', key: 'ptMembers' },
   { label: 'PT Revenue', key: 'ptRevenue', format: true },
   { label: 'Total Revenue', key: 'totalRevenue', format: true },
   { label: 'Monthly Expenses', key: 'expenses', format: true },
@@ -281,7 +283,8 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
     loanInterest: 0,
     loanPrincipal: 0,
     loanBalance: 0,
-    fcfPercentage: 0
+    fcfPercentage: 0,
+    ptMembers: 0
   });
 
   let totalMembers = 0;
@@ -316,8 +319,9 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
 
     const priceIncreaseFactor = Math.pow(1 + assumptions.annualPriceIncrease / 100, year);
     const subscriptionRevenue = startMembers * assumptions.subscriptionPrice * priceIncreaseFactor;
-    const ptRevenue = totalMembers * (assumptions.ptPenetration / 100) * 
-                     assumptions.ptSubscriptionPrice * (assumptions.ptShareWithGym / 100) * priceIncreaseFactor;
+    const ptMembers = Math.floor(totalMembers * (assumptions.ptPenetration / 100));
+    const ptRevenue = ptMembers * assumptions.ptSubscriptionPrice * 
+                     (assumptions.ptShareWithGym / 100) * priceIncreaseFactor;
     const totalRevenue = subscriptionRevenue + ptRevenue;
     
     const expenseIncreaseFactor = Math.pow(1 + assumptions.annualExpenseIncrease / 100, year);
@@ -390,7 +394,8 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
       cumulativeFcf,
       cumulativeDcf,
       cumulativeNpv,
-      fcfPercentage
+      fcfPercentage,
+      ptMembers
     });
   }
 
@@ -615,179 +620,240 @@ function App() {
           </Tabs>
 
           <TabPanel value={inputTabValue} index={0}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Monthly Target Sales"
-                  type="number"
-                  value={assumptions.monthlyNewMembers === 0 ? '' : assumptions.monthlyNewMembers}  // Handle zero values
-                  onChange={handleInputChange('monthlyNewMembers')}
-                  variant="outlined"
-                />
+            {/* Revenue & Capacity Parameters */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: '#1976d2', fontWeight: 600 }}>
+                Revenue & Growth Parameters
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Monthly Target Sales"
+                    type="number"
+                    value={assumptions.monthlyNewMembers}
+                    onChange={handleInputChange('monthlyNewMembers')}
+                    variant="outlined"
+                    helperText="Number of new members targeted per month"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Subscription Price (INR)"
+                    type="number"
+                    value={assumptions.subscriptionPrice}
+                    onChange={handleInputChange('subscriptionPrice')}
+                    variant="outlined"
+                    helperText="Monthly membership fee"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Maximum Capacity"
+                    type="number"
+                    value={assumptions.maxCapacity}
+                    onChange={handleInputChange('maxCapacity')}
+                    variant="outlined"
+                    helperText="Maximum members the facility can handle"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Annual Price Increase (%)"
+                    type="number"
+                    value={assumptions.annualPriceIncrease}
+                    onChange={handleInputChange('annualPriceIncrease')}
+                    variant="outlined"
+                    helperText="Yearly increase in subscription prices"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Annual Expense Increase (%)"
+                    type="number"
+                    value={assumptions.annualExpenseIncrease}
+                    onChange={handleInputChange('annualExpenseIncrease')}
+                    variant="outlined"
+                    helperText="Yearly increase in operating expenses"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="PT Penetration (%)"
-                  type="number"
-                  value={assumptions.ptPenetration}
-                  onChange={handleInputChange('ptPenetration')}
-                  variant="outlined"
-                />
+            </Box>
+
+            {/* Personal Training Parameters */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: '#1976d2', fontWeight: 600 }}>
+                Personal Training Parameters
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="PT Penetration (%)"
+                    type="number"
+                    value={assumptions.ptPenetration}
+                    onChange={handleInputChange('ptPenetration')}
+                    variant="outlined"
+                    helperText="Percentage of members taking PT services"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="PT Share with Gym (%)"
+                    type="number"
+                    value={assumptions.ptShareWithGym}
+                    onChange={handleInputChange('ptShareWithGym')}
+                    variant="outlined"
+                    helperText="Percentage of PT revenue retained by gym"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="PT Subscription Price (INR)"
+                    type="number"
+                    value={assumptions.ptSubscriptionPrice}
+                    onChange={handleInputChange('ptSubscriptionPrice')}
+                    variant="outlined"
+                    helperText="Monthly PT subscription fee"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="PT Subscription Price (INR)"
-                  type="number"
-                  value={assumptions.ptSubscriptionPrice}
-                  onChange={handleInputChange('ptSubscriptionPrice')}
-                  variant="outlined"
-                />
+            </Box>
+
+            {/* Project Parameters */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: '#1976d2', fontWeight: 600 }}>
+                Project Timeline & Valuation Parameters
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Project Life (Years)"
+                    type="number"
+                    value={assumptions.projectLife}
+                    onChange={handleInputChange('projectLife')}
+                    variant="outlined"
+                    helperText="Duration of project analysis in years"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Discount Rate (%)"
+                    type="number"
+                    value={assumptions.discountRate}
+                    onChange={handleInputChange('discountRate')}
+                    variant="outlined"
+                    helperText="Annual rate used for DCF calculations"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Salvage Value (%)"
+                    type="number"
+                    value={assumptions.salvageValue}
+                    onChange={handleInputChange('salvageValue')}
+                    variant="outlined"
+                    helperText="Recoverable value at end of project life"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="PT Share with Gym (%)"
-                  type="number"
-                  value={assumptions.ptShareWithGym}
-                  onChange={handleInputChange('ptShareWithGym')}
-                  variant="outlined"
-                />
+            </Box>
+
+            {/* Financial Parameters */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: '#1976d2', fontWeight: 600 }}>
+                Financial Analysis Parameters
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Reinvestment Rate (%)"
+                    type="number"
+                    value={assumptions.reinvestmentRate}
+                    onChange={handleInputChange('reinvestmentRate')}
+                    variant="outlined"
+                    helperText="Annual rate for reinvesting positive cash flows"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Financing Rate (%)"
+                    type="number"
+                    value={assumptions.financingRate}
+                    onChange={handleInputChange('financingRate')}
+                    variant="outlined"
+                    helperText="Annual rate for financing negative cash flows"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Maximum Capacity"
-                  type="number"
-                  value={assumptions.maxCapacity}
-                  onChange={handleInputChange('maxCapacity')}
-                  variant="outlined"
-                />
+            </Box>
+
+            {/* Loan Details - existing code */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: '#1976d2', fontWeight: 600 }}>
+                Loan Details
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Use Loan"
+                    select
+                    value={assumptions.useLoan.toString()}
+                    onChange={handleInputChange('useLoan')}
+                    variant="outlined"
+                  >
+                    <MenuItem value="true">Yes</MenuItem>
+                    <MenuItem value="false">No</MenuItem>
+                  </TextField>
+                </Grid>
+                {assumptions.useLoan && (
+                  <>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Loan Amount (INR)"
+                        type="number"
+                        value={assumptions.loanAmount}
+                        onChange={handleInputChange('loanAmount')}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Loan Tenure (Years)"
+                        type="number"
+                        value={assumptions.loanTenure}
+                        onChange={handleInputChange('loanTenure')}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Loan Interest Rate (%)"
+                        type="number"
+                        value={assumptions.loanInterest}
+                        onChange={handleInputChange('loanInterest')}
+                        variant="outlined"
+                      />
+                    </Grid>
+                  </>
+                )}
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Subscription Price (INR)"
-                  type="number"
-                  value={assumptions.subscriptionPrice}
-                  onChange={handleInputChange('subscriptionPrice')}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Annual Price Increase (%)"
-                  type="number"
-                  value={assumptions.annualPriceIncrease}
-                  onChange={handleInputChange('annualPriceIncrease')}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Discount Rate (%)"
-                  type="number"
-                  value={assumptions.discountRate}
-                  onChange={handleInputChange('discountRate')}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Project Life (Years)"
-                  type="number"
-                  value={assumptions.projectLife}
-                  onChange={handleInputChange('projectLife')}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Reinvestment Rate (%)"
-                  type="number"
-                  value={assumptions.reinvestmentRate}
-                  onChange={handleInputChange('reinvestmentRate')}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Financing Rate (%)"
-                  type="number"
-                  value={assumptions.financingRate}
-                  onChange={handleInputChange('financingRate')}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Salvage Value (%)"
-                  type="number"
-                  value={assumptions.salvageValue}
-                  onChange={handleInputChange('salvageValue')}
-                  variant="outlined"
-                  helperText="Percentage of initial investment recoverable at end of project"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ mb: 2, color: '#666' }}>Loan Details</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Use Loan"
-                  select
-                  value={assumptions.useLoan.toString()}
-                  onChange={handleInputChange('useLoan')}
-                  variant="outlined"
-                >
-                  <MenuItem value="true">Yes</MenuItem>
-                  <MenuItem value="false">No</MenuItem>
-                </TextField>
-              </Grid>
-              {assumptions.useLoan && (
-                <>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <TextField
-                      fullWidth
-                      label="Loan Amount (INR)"
-                      type="number"
-                      value={assumptions.loanAmount}
-                      onChange={handleInputChange('loanAmount')}
-                      variant="outlined"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <TextField
-                      fullWidth
-                      label="Loan Tenure (Years)"
-                      type="number"
-                      value={assumptions.loanTenure}
-                      onChange={handleInputChange('loanTenure')}
-                      variant="outlined"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <TextField
-                      fullWidth
-                      label="Loan Interest Rate (%)"
-                      type="number"
-                      value={assumptions.loanInterest}
-                      onChange={handleInputChange('loanInterest')}
-                      variant="outlined"
-                    />
-                  </Grid>
-                </>
-              )}
-            </Grid>
+            </Box>
           </TabPanel>
 
           <TabPanel value={inputTabValue} index={1}>
@@ -928,7 +994,7 @@ function App() {
                 Valuation Metrics
               </Typography>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={2}>
+             <Grid item xs={12} sm={6} md={2}>
                   <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f5f5f5' }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>NPV</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
