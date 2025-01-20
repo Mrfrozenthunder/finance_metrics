@@ -634,7 +634,7 @@ function App() {
                     value={assumptions.monthlyNewMembers}
                     onChange={handleInputChange('monthlyNewMembers')}
                     variant="outlined"
-                    helperText="Number of new members targeted per month"
+
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -645,7 +645,7 @@ function App() {
                     value={assumptions.subscriptionPrice}
                     onChange={handleInputChange('subscriptionPrice')}
                     variant="outlined"
-                    helperText="Monthly membership fee"
+                                  
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -656,7 +656,7 @@ function App() {
                     value={assumptions.maxCapacity}
                     onChange={handleInputChange('maxCapacity')}
                     variant="outlined"
-                    helperText="Maximum members the facility can handle"
+                    
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -667,7 +667,7 @@ function App() {
                     value={assumptions.annualPriceIncrease}
                     onChange={handleInputChange('annualPriceIncrease')}
                     variant="outlined"
-                    helperText="Yearly increase in subscription prices"
+                    
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -678,7 +678,7 @@ function App() {
                     value={assumptions.annualExpenseIncrease}
                     onChange={handleInputChange('annualExpenseIncrease')}
                     variant="outlined"
-                    helperText="Yearly increase in operating expenses"
+                    
                   />
                 </Grid>
               </Grid>
@@ -709,7 +709,7 @@ function App() {
                     value={assumptions.ptShareWithGym}
                     onChange={handleInputChange('ptShareWithGym')}
                     variant="outlined"
-                    helperText="Percentage of PT revenue retained by gym"
+                    
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -720,7 +720,7 @@ function App() {
                     value={assumptions.ptSubscriptionPrice}
                     onChange={handleInputChange('ptSubscriptionPrice')}
                     variant="outlined"
-                    helperText="Monthly PT subscription fee"
+                    
                   />
                 </Grid>
               </Grid>
