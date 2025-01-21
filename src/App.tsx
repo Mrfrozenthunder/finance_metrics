@@ -140,31 +140,42 @@ const initialAssumptions: Assumptions = {
 };
 
 const metrics = [
+  // Membership metrics
   { label: 'Target Sales', key: 'targetSales' },
   { label: 'New Members', key: 'newMembers' },
   { label: 'Repeat Members', key: 'repeatMembers' },
   { label: 'Expired Members', key: 'expiredMembers' },
   { label: 'Total Members', key: 'totalMembers' },
   { label: 'PT Members', key: 'ptMembers' },
+  
+  // Revenue metrics
   { label: 'Subscription Revenue', key: 'subscriptionRevenue', format: true },
   { label: 'PT Revenue', key: 'ptRevenue', format: true },
   { label: 'Total Revenue', key: 'totalRevenue', format: true },
+  
+  // Expense metrics
   { label: 'Monthly Expenses', key: 'expenses', format: true },
+  { label: 'Depreciation', key: 'depreciation', format: true },
+  { label: 'Interest', key: 'interest', format: true },
+  
+  // Profitability metrics
   { label: 'Gross Margin', key: 'grossMargin', format: true },
   { label: 'Gross Margin %', key: 'grossMarginPercentage', percentage: true },
   { label: 'PT Sales %', key: 'ptSalesPercentage', percentage: true },
-  { label: 'Depreciation', key: 'depreciation', format: true },
-  { label: 'Interest', key: 'interest', format: true },
   { label: 'EBITDA', key: 'ebitda', format: true },
   { label: 'EBITDA %', key: 'ebitdaPercentage', percentage: true },
   { label: 'PBT', key: 'pbt', format: true },
   { label: 'Tax', key: 'tax', format: true },
   { label: 'PAT', key: 'pat', format: true },
-  { label: 'PAT %', key: 'patPercentage', percentage: true }, // Add this new metric
+  { label: 'PAT %', key: 'patPercentage', percentage: true },
+  
+  // Loan metrics
   { label: 'EMI', key: 'emi', format: true },
   { label: 'Loan Interest', key: 'loanInterest', format: true },
   { label: 'Loan Principal', key: 'loanPrincipal', format: true },
   { label: 'Loan Balance', key: 'loanBalance', format: true },
+  
+  // Cash flow metrics
   { label: 'FCF', key: 'fcf', format: true },
   { label: 'FCF %', key: 'fcfPercentage', percentage: true },
   { label: 'Cumulative FCF', key: 'cumulativeFcf', format: true },
