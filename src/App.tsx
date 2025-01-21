@@ -64,6 +64,7 @@ interface MonthlyData {
   pbt: number;
   tax: number;
   pat: number;
+  patPercentage: number; // Add this new property
   fcf: number;
   dcf: number;
   cumulativeFcf: number;
@@ -144,8 +145,8 @@ const metrics = [
   { label: 'Repeat Members', key: 'repeatMembers' },
   { label: 'Expired Members', key: 'expiredMembers' },
   { label: 'Total Members', key: 'totalMembers' },
-  { label: 'Subscription Revenue', key: 'subscriptionRevenue', format: true },
   { label: 'PT Members', key: 'ptMembers' },
+  { label: 'Subscription Revenue', key: 'subscriptionRevenue', format: true },
   { label: 'PT Revenue', key: 'ptRevenue', format: true },
   { label: 'Total Revenue', key: 'totalRevenue', format: true },
   { label: 'Monthly Expenses', key: 'expenses', format: true },
@@ -159,16 +160,17 @@ const metrics = [
   { label: 'PBT', key: 'pbt', format: true },
   { label: 'Tax', key: 'tax', format: true },
   { label: 'PAT', key: 'pat', format: true },
+  { label: 'PAT %', key: 'patPercentage', percentage: true }, // Add this new metric
   { label: 'EMI', key: 'emi', format: true },
   { label: 'Loan Interest', key: 'loanInterest', format: true },
   { label: 'Loan Principal', key: 'loanPrincipal', format: true },
   { label: 'Loan Balance', key: 'loanBalance', format: true },
   { label: 'FCF', key: 'fcf', format: true },
-  { label: 'FCF %', key: 'fcfPercentage', percentage: true },  // Add this new metric
+  { label: 'FCF %', key: 'fcfPercentage', percentage: true },
   { label: 'Cumulative FCF', key: 'cumulativeFcf', format: true },
   { label: 'DCF', key: 'dcf', format: true },
   { label: 'Cumulative DCF', key: 'cumulativeDcf', format: true },
-  { label: 'Cumulative NPV', key: 'cumulativeNpv', format: true }  // Add this new metric
+  { label: 'Cumulative NPV', key: 'cumulativeNpv', format: true }
 ];
 
 const theme = createTheme({
@@ -274,6 +276,7 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
     pbt: 0,
     tax: 0,
     pat: 0,
+    patPercentage: 0, // Add PAT percentage to data
     fcf: initialInvestment,
     dcf: initialInvestment,
     cumulativeFcf: initialInvestment,
@@ -346,6 +349,7 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
     const pbt = ebitda - monthlyDepreciation - loanInterest;
     const tax = pbt * (assumptions.taxRate / 100);
     const pat = pbt - tax;
+    const patPercentage = (pat / totalRevenue) * 100; // Calculate PAT percentage
     
     // Calculate FCF (no initial investment deduction since we're past month 0)
     const fcf = pat + monthlyDepreciation;
@@ -385,6 +389,7 @@ const calculateMonthlyData = (assumptions: Assumptions, expenses: ExpenseItem[],
       pbt,
       tax,
       pat,
+      patPercentage, // Add PAT percentage to data
       emi,
       loanInterest,
       loanPrincipal,
