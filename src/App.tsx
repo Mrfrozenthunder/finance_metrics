@@ -1138,8 +1138,9 @@ function App() {
                             Year {i + 1}
                           </TableCell>
                         ))}
-                        <TableCell align="center" sx={{ width: '30%', fontWeight: 'bold' }}>Total Depreciation</TableCell>
+                        <TableCell align="center" sx={{ width: '15%', fontWeight: 'bold' }}>Total Depreciation</TableCell>
                         <TableCell align="center" sx={{ width: '12%', fontWeight: 'bold' }}>% of Initial Cost</TableCell>
+                        <TableCell align="center" sx={{ width: '20%', fontWeight: 'bold' }}>PV of Depreciation Tax Shield</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1147,18 +1148,24 @@ function App() {
                         let currentValue = asset.cost;
                         const yearlyDepreciation = [];
                         let totalDepreciation = 0;
+                        let pvTaxShield = 0;
                         
                         for (let i = 0; i < Number(assumptions.projectLife); i++) {
                           const depreciation = currentValue * (asset.rate / 100);
                           yearlyDepreciation.push(depreciation);
                           totalDepreciation += depreciation;
                           currentValue -= depreciation;
+
+                          // Calculate present value of tax shield
+                          const taxShield = depreciation * (assumptions.taxRate / 100);
+                          const discountFactor = Math.pow(1 + assumptions.discountRate / 100, i + 1);
+                          pvTaxShield += taxShield / discountFactor;
                         }
 
                         return (
                           <TableRow key={asset.name} hover>
                             <TableCell sx={{ width: '20%', fontWeight: 'bold' }}>{asset.name}</TableCell>
-                            <TableCell align="right" sx={{ width: '30%' }}>{formatCurrency(asset.cost)}</TableCell>
+                            <TableCell align="right" sx={{ width: '15%' }}>{formatCurrency(asset.cost)}</TableCell>
                             <TableCell align="right" sx={{ width: '10%' }}>{asset.rate}%</TableCell>
                             {yearlyDepreciation.map((dep, i) => (
                               <TableCell key={i} align="right" sx={{ width: '8%' }}>{formatCurrency(dep)}</TableCell>
@@ -1168,6 +1175,9 @@ function App() {
                             </TableCell>
                             <TableCell align="right" sx={{ width: '12%', fontWeight: 'bold' }}>
                               {((totalDepreciation / asset.cost) * 100).toFixed(1)}%
+                            </TableCell>
+                            <TableCell align="right" sx={{ width: '20%', fontWeight: 'bold' }}>
+                              {formatCurrency(pvTaxShield)}
                             </TableCell>
                           </TableRow>
                         );
@@ -1224,6 +1234,22 @@ function App() {
                             }, 0) / 
                             investments.reduce((sum, asset) => sum + asset.cost, 0) * 100
                           ).toFixed(1)}%
+                        </TableCell>
+                        <TableCell align="right" sx={{ width: '20%', fontWeight: 'bold' }}>
+                          {formatCurrency(
+                            investments.reduce((sum, asset) => {
+                              let pvTaxShield = 0;
+                              let currentValue = asset.cost;
+                              for (let i = 0; i < Number(assumptions.projectLife); i++) {
+                                const depreciation = currentValue * (asset.rate / 100);
+                                const taxShield = depreciation * (assumptions.taxRate / 100);
+                                const discountFactor = Math.pow(1 + assumptions.discountRate / 100, i + 1);
+                                pvTaxShield += taxShield / discountFactor;
+                                currentValue -= depreciation;
+                              }
+                              return sum + pvTaxShield;
+                            }, 0)
+                          )}
                         </TableCell>
                       </TableRow>
                     </TableBody>
